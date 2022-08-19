@@ -1,0 +1,58 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.1.1
+Date: ????
+  Changes:
+---------------------------------------------------------------------------------------------------
+Version: 1.1.0
+Date: 2021-12-30
+  Features:
+    - Additional details for more entity types
+  Changes:
+    - Stop emitting settings and conditions with no effect
+    - Version bump for Factorio 1.1
+  Other:
+    - Retroactive creation of past changelog
+---------------------------------------------------------------------------------------------------
+Version: 1.0.0
+Date: 2020-??-??
+  Changes:
+    - Version bump for Factorio 1.0
+  Other:
+    - Ownership handed off from justarandomgeek to sparr
+---------------------------------------------------------------------------------------------------
+Version: 0.18.0
+Date: 2020-01-21
+  Changes:
+    - Version bump for Factorio 0.18
+  Other:
+    - Created gitignore file
+---------------------------------------------------------------------------------------------------
+Version: 0.17.0
+Date: 2019-02-24
+  Changes:
+    - Version bump for Factorio 0.17
+---------------------------------------------------------------------------------------------------
+Version: 0.16.0
+Date: 2017-12-16
+  Changes:
+    - Version bump for Factorio 0.16
+---------------------------------------------------------------------------------------------------
+Version: 0.15.1
+Date: 2016-05-10
+  Features:
+    - Additional details for more entity types
+---------------------------------------------------------------------------------------------------
+Version: 0.15.0
+Date: 2016-04-25
+  Features:
+    - Additional details for more entity types
+  Changes:
+    - Version bump for Factorio 0.15
+---------------------------------------------------------------------------------------------------
+Version: 0.14.0
+Date: 2016-??-??
+  Features:
+    - Additional details for more entity types
+  Changes:
+    - Version bump for Factorio 0.14
+
