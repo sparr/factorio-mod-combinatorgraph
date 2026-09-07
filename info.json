@@ -1,9 +1,9 @@
 {
-  "name":"combinatorgraph",
-  "author":"justarandomgeek",
-  "version": "1.1.1",
-  "title":"Combinator Graph Generator",
-  "homepage":"",
-  "description":"Generates a graphviz diagram for the selected combinator circuits.",
-  "factorio_version": "1.1"
+  "name": "combinatorgraph",
+  "author": "justarandomgeek",
+  "version": "2.1.0",
+  "title": "Combinator Graph Generator",
+  "homepage": "",
+  "description": "Generates a graphviz diagram for the selected combinator circuits.",
+  "factorio_version": "2.1"
 }

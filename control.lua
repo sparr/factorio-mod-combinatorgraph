@@ -3,14 +3,19 @@ local function SignalLabel(signal)
   return signal and signal.name or nil
 end
 
+-- 2.0 replaced the constant combinator's flat parameter list with logistic sections,
+-- each holding filters whose signal is a value and whose count is a minimum. An empty
+-- combinator has no sections at all, which is what used to be handed to pairs as nil.
 local function CCDataLabels(control)
   local labels = {}
-  for _,param in pairs(control.parameters) do
-    if param.signal.name then
-      labels[#labels+1] = string.format("{%s|%d}",
-        SignalLabel(param.signal),
-        param.count
-      )
+  for _,section in pairs(control.sections or {}) do
+    for _,filter in pairs(section.filters or {}) do
+      if filter.value and filter.value.name then
+        labels[#labels+1] = string.format("{%s|%d}",
+          filter.value.name,
+          filter.min or 0
+        )
+      end
     end
   end
   return labels
@@ -29,12 +34,14 @@ end
 
 local function InserterLabel(control)
   local labels = {}
-  if control.circuit_mode_of_operation == defines.control_behavior.inserter.circuit_mode_of_operation.enable_disable then
-    local label = ConditionLabel(control.circuit_condition.condition)
+  -- the single mode_of_operation became two independent switches
+  if control.circuit_enable_disable then
+    local label = ConditionLabel(control.circuit_condition)
     if label then
       labels[#labels+1] = label
     end
-  elseif control.circuit_mode_of_operation == defines.control_behavior.inserter.circuit_mode_of_operation.set_filters then
+  end
+  if control.circuit_set_filters then
     labels[#labels+1] = "Set Filters (" .. control.entity.inserter_filter_mode .. ")"
   end
 
@@ -88,8 +95,8 @@ local function RailSignalLabel(control)
       labels[#labels+1] = '{Green Signal|' .. SignalLabel(control.green_signal) .. '}'
     end
   end
-  if control.close_signal and ConditionLabel(control.circuit_condition.condition) then
-    labels[#labels+1] = ConditionLabel(control.circuit_condition.condition)
+  if control.close_signal and ConditionLabel(control.circuit_condition) then
+    labels[#labels+1] = ConditionLabel(control.circuit_condition)
   end
   return table.concat(labels, '|')
 end
@@ -111,12 +118,16 @@ local function RailChainSignalLabel(control)
   return table.concat(labels, '|')
 end
 
+-- likewise here: one mode became two switches, and both can be on at once
 local function LogisticContainerLabel(control)
-  if control.circuit_mode_of_operation == defines.control_behavior.logistic_container.circuit_mode_of_operation.send_contents then
-    return "Read Contents"
-  elseif control.circuit_mode_of_operation == defines.control_behavior.logistic_container.circuit_mode_of_operation.set_requests then
-    return "Set Requests"
+  local labels = {}
+  if control.read_contents then
+    labels[#labels+1] = "Read Contents"
   end
+  if control.set_requests then
+    labels[#labels+1] = "Set Requests"
+  end
+  return table.concat(labels, '|')
 end
 
 local function EntityLabel(ent)
@@ -130,11 +141,11 @@ local function EntityLabel(ent)
   end
   local labels = {ent.name}
   if control.type == defines.control_behavior.type.container or
-    control.type == defines.control_behavior.type.storage_tank then
+    control.type == defines.control_behavior.type.single_fluid_box then
       -- nothing special
   elseif control.type == defines.control_behavior.type.generic_on_off then
-    if control.circuit_condition.condition then
-      local label = ConditionLabel(control.circuit_condition.condition)
+    if control.circuit_enable_disable then
+      local label = ConditionLabel(control.circuit_condition)
       if label then
         labels[#labels+1] = label
       end
@@ -154,7 +165,7 @@ local function EntityLabel(ent)
     if control.use_colors then
       labels[#labels+1] = 'Use Colors'
     end
-    local label = ConditionLabel(control.circuit_condition.condition)
+    local label = ConditionLabel(control.circuit_condition)
     if label then
       labels[#labels+1] = label
     end
@@ -178,20 +189,24 @@ local function EntityLabel(ent)
     if control.read_trains_count and SignalLabel(control.trains_count_signal) then
       labels[#labels+1] = '{Read trains count|' .. SignalLabel(control.trains_count_signal) .. '}'
     end
-    if control.enable_disable then
-      local label = ConditionLabel(control.circuit_condition.condition)
+    if control.circuit_enable_disable then
+      local label = ConditionLabel(control.circuit_condition)
       if label then
         labels[#labels+1] = label
       end
     end
   elseif control.type == defines.control_behavior.type.decider_combinator then
-    local label = ConditionLabel(control.parameters)
-    if label then
-      labels[#labels+1] = label
+    for _,condition in pairs(control.parameters.conditions or {}) do
+      local label = ConditionLabel(condition)
+      if label then
+        labels[#labels+1] = label
+      end
     end
-    label = SignalLabel(control.parameters.output_signal)
-    if label then
-      labels[#labels+1] = '{' .. label .. '|=|' .. (control.parameters.copy_count_from_input and 'input' or '1') .. '}'
+    for _,output in pairs(control.parameters.outputs or {}) do
+      local label = SignalLabel(output.signal)
+      if label then
+        labels[#labels+1] = '{' .. label .. '|=|' .. (output.copy_count_from_input and 'input' or '1') .. '}'
+      end
     end
     return '<1>\\>|{' .. table.concat(labels, '|') .. '}|<2>\\>'
   elseif control.type == defines.control_behavior.type.arithmetic_combinator then
@@ -211,8 +226,8 @@ local function EntityLabel(ent)
     labels[#labels+1] = control.enabled and "On" or "Off"
     labels[#labels+1] = table.concat(CCDataLabels(control),"|")
   elseif control.type == defines.control_behavior.type.transport_belt then
-    if control.enable_disable then
-      local label = ConditionLabel(control.circuit_condition.condition)
+    if control.circuit_enable_disable then
+      local label = ConditionLabel(control.circuit_condition)
       if label then
         labels[#labels+1] = label
       end
@@ -236,7 +251,7 @@ local function EntityLabel(ent)
     end
   elseif control.type == defines.control_behavior.type.wall then
     if control.open_gate then
-      local label = ConditionLabel(control.circuit_condition.condition)
+      local label = ConditionLabel(control.circuit_condition)
       if label then
         labels[#labels+1] = label
       end
@@ -249,7 +264,7 @@ local function EntityLabel(ent)
     end
   elseif control.type == defines.control_behavior.type.mining_drill then
     if control.circuit_enable_disable then
-      local label = ConditionLabel(control.circuit_condition.condition)
+      local label = ConditionLabel(control.circuit_condition)
       if label then
         labels[#labels+1] = label
       end
@@ -275,15 +290,15 @@ local function EntityLabel(ent)
     if control.circuit_parameters.signal_value_is_pitch then
       labels[#labels+1] = string.format('{%s|%s}',
         instruments[control.circuit_parameters.instrument_id+1] and instruments[control.circuit_parameters.instrument_id+1].name or control.circuit_parameters.instrument_id,
-        SignalLabel(control.circuit_condition.condition.first_signal)
+        SignalLabel(control.circuit_condition.first_signal)
       )
     else
       labels[#labels+1] = string.format('{%s|%s}',
         instruments[control.circuit_parameters.instrument_id+1] and instruments[control.circuit_parameters.instrument_id+1].name or control.circuit_parameters.instrument_id,
         instruments[control.circuit_parameters.instrument_id+1] and instruments[control.circuit_parameters.instrument_id+1].notes[control.circuit_parameters.note_id+1] or control.circuit_parameters.note_id
       )
-      if ConditionLabel(control.circuit_condition.condition) then
-        labels[#labels+1] = ConditionLabel(control.circuit_condition.condition)
+      if ConditionLabel(control.circuit_condition) then
+        labels[#labels+1] = ConditionLabel(control.circuit_condition)
       end
     end
 
@@ -300,9 +315,21 @@ local function EntityLabel(ent)
   return '{' .. table.concat(labels, '|') .. '}'
 end
 
-local colors = {
-  [defines.wire_type.red] = "red",
-  [defines.wire_type.green] = "green"
+-- 2.0 replaced circuit_connection_definitions with wire connectors: an entity has one
+-- connector per wire colour per side, and each connector lists the connectors it reaches.
+-- A combinator therefore has four rather than two, and which side a wire lands on is a
+-- property of the connector rather than a circuit id carried on the connection.
+--
+-- port is the old circuit id: 1 for the input side, 2 for the output side, and 1 for
+-- everything that only has one side. Copper connectors -- poles and power switches --
+-- are not circuit wires and are left out entirely.
+local connectors = {
+  [defines.wire_connector_id.circuit_red]             = { port = 1, color = "red" },
+  [defines.wire_connector_id.circuit_green]           = { port = 1, color = "green" },
+  [defines.wire_connector_id.combinator_input_red]    = { port = 1, color = "red" },
+  [defines.wire_connector_id.combinator_input_green]  = { port = 1, color = "green" },
+  [defines.wire_connector_id.combinator_output_red]   = { port = 2, color = "red" },
+  [defines.wire_connector_id.combinator_output_green] = { port = 2, color = "green" },
 }
 
 local function WirePort(ent,port)
@@ -314,6 +341,17 @@ local function WirePort(ent,port)
   end
 end
 
+--- The circuit connectors an entity actually has something plugged into
+local function CircuitConnectors(ent)
+  local found = {}
+  for id,connector in pairs(ent.get_wire_connectors(false)) do
+    if connectors[id] and connector.connection_count > 0 then
+      found[#found+1] = { connector = connector, info = connectors[id] }
+    end
+  end
+  return found
+end
+
 local function GraphCombinators(ents)
   local gv = {
     "graph combinators {",
@@ -322,7 +360,8 @@ local function GraphCombinators(ents)
   }
   local donelist = {}
   for _,ent in pairs(ents) do
-    if ent.circuit_connection_definitions and #ent.circuit_connection_definitions > 0 then
+    local wired = CircuitConnectors(ent)
+    if #wired > 0 then
       gv[#gv+1] = string.format('%d [shape=record label="%s" pos="%d,%d"];',
         ent.unit_number,
         EntityLabel(ent),
@@ -330,18 +369,25 @@ local function GraphCombinators(ents)
         ent.position.y
       )
 
-      for _,conn in pairs(ent.circuit_connection_definitions) do
-        if not (
-          donelist[conn.target_entity.unit_number] or
-          ent == conn.target_entity and conn.target_circuit_id == 1
-          ) then
-          gv[#gv+1] = string.format('%d:%d -- %d:%d [color=%s headport=%s tailport=%s];',
-            ent.unit_number,conn.source_circuit_id,
-            conn.target_entity.unit_number,conn.target_circuit_id,
-            colors[conn.wire],
-            WirePort(conn.target_entity,conn.target_circuit_id),
-            WirePort(ent,conn.source_circuit_id)
-          )
+      for _,source in pairs(wired) do
+        for _,connection in pairs(source.connector.connections) do
+          local target = connection.target
+          local target_info = connectors[target.wire_connector_id]
+          local target_ent = target_info and target.owner
+          -- each wire is reached from both ends, so it is drawn from whichever end is
+          -- seen first; the self connection is drawn once, from the output side
+          if target_ent and not (
+            donelist[target_ent.unit_number] or
+            ent == target_ent and target_info.port == 1
+            ) then
+            gv[#gv+1] = string.format('%d:%d -- %d:%d [color=%s headport=%s tailport=%s];',
+              ent.unit_number,source.info.port,
+              target_ent.unit_number,target_info.port,
+              source.info.color,
+              WirePort(target_ent,target_info.port),
+              WirePort(ent,source.info.port)
+            )
+          end
         end
       end
     end
@@ -349,7 +395,8 @@ local function GraphCombinators(ents)
     donelist[ent.unit_number] = true
   end
   gv[#gv+1] = "}"
-  game.write_file("combinatorgraph.gv",table.concat(gv,'\n'))
+  -- 2.0 moved write_file off game and onto helpers
+  helpers.write_file("combinatorgraph.gv",table.concat(gv,"\n"))
 end
 
 
