@@ -249,3 +249,52 @@ describe("settings with no effect", function()
                                                control = control }, showing))
     end)
 end)
+
+--- New in 2.0, and it had no handling at all: it was drawn as its own name twice over
+describe("a selector combinator", function()
+    local function selector(parameters)
+        return labelled("selector-combinator",
+            { type = types.selector_combinator, parameters = parameters })
+    end
+
+    it("names the operation it is set to", function()
+        assert.equals('<1>\\>|{selector-combinator|Stack size}|<2>\\>',
+            selector{ operation = "stack-size" })
+        assert.equals('<1>\\>|{selector-combinator|Rocket capacity}|<2>\\>',
+            selector{ operation = "rocket-capacity" })
+        assert.equals('<1>\\>|{selector-combinator|Quality filter}|<2>\\>',
+            selector{ operation = "quality-filter" })
+    end)
+
+    it("defaults to select, as the game does", function()
+        assert.equals('<1>\\>|{selector-combinator|Select input|{Sort ascending|Index|0}}|<2>\\>',
+            selector{})
+    end)
+
+    it("says which end of the sort it takes, and the index", function()
+        assert.equals('<1>\\>|{selector-combinator|Select input|{Sort descending|Index|3}}|<2>\\>',
+            selector{ operation = "select", select_max = true, index_constant = 3 })
+    end)
+
+    it("takes the index from a signal when there is one", function()
+        assert.equals('<1>\\>|{selector-combinator|Select input|{Sort ascending|Index|signal-I}}|<2>\\>',
+            selector{ operation = "select", index_constant = 3,
+                      index_signal = support.signal("signal-I", "virtual") })
+    end)
+
+    it("names the signal a count is emitted on", function()
+        assert.equals('<1>\\>|{selector-combinator|Count inputs|{Count output|signal-C}}|<2>\\>',
+            selector{ operation = "count",
+                      count_signal = support.signal("signal-C", "virtual") })
+    end)
+
+    it("leaves out a count with no signal to emit on", function()
+        assert.equals('<1>\\>|{selector-combinator|Count inputs}|<2>\\>',
+            selector{ operation = "count" })
+    end)
+
+    it("gives the interval a random selection is made on", function()
+        assert.equals('<1>\\>|{selector-combinator|Random input|{Update interval|60}}|<2>\\>',
+            selector{ operation = "random", random_update_interval = 60 })
+    end)
+end)

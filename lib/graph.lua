@@ -23,8 +23,16 @@ Graph.connectors = {
   [defines.wire_connector_id.combinator_output_green] = { port = 2, color = "green" },
 }
 
+--- The three entities with a separate input and output side. A constant combinator is
+--- not one of them despite the name: it has a single connector like anything else.
+local TWO_SIDED = {
+  ["arithmetic-combinator"] = true,
+  ["decider-combinator"] = true,
+  ["selector-combinator"] = true,
+}
+
 function Graph.WirePort(ent,port)
-  if ent.type == "arithmetic-combinator" or ent.type == "decider-combinator" then
+  if TWO_SIDED[ent.type] then
     local ports={"w","e"}
     return ports[port]
   else

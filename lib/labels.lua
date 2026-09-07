@@ -8,6 +8,19 @@
 --- a lowercase module would be shadowed by it.
 local Localise = require("lib.localise")
 
+--- The English the game uses for each selector combinator operation, kept as the fallback
+--- for the locale keys above them
+local SELECTOR_OPERATIONS = {
+  ["select"] = "Select input",
+  ["count"] = "Count inputs",
+  ["random"] = "Random input",
+  ["stack-size"] = "Stack size",
+  ["rocket-capacity"] = "Rocket capacity",
+  ["quality-filter"] = "Quality filter",
+  ["quality-transfer"] = "Quality transfer",
+  ["time"] = "Time",
+}
+
 local MODES = "gui-control-behavior-modes."
 local GUIS = "gui-control-behavior-modes-guis."
 local CG = "combinatorgraph."
@@ -289,6 +302,33 @@ function Labels.EntityLabel(ent, options)
          control.parameters.second_constant or Labels.NONE) ..
         '}'
       labels[#labels+1] = Labels.SignalLabel(control.parameters.output_signal, options) or Labels.NONE
+    end
+    return '<1>\\>|{' .. table.concat(labels, '|') .. '}|<2>\\>'
+  elseif control.type == defines.control_behavior.type.selector_combinator then
+    -- new in 2.0, and every operation has its own name in the game's own locale
+    local parameters = control.parameters
+    local operation = parameters.operation or "select"
+    labels[#labels+1] = word(options, "gui-selector." .. operation,
+      SELECTOR_OPERATIONS[operation] or operation)
+    if operation == "select" then
+      local order = parameters.select_max
+        and word(options, "gui-selector.select-max", "Sort descending")
+        or word(options, "gui-selector.select-min", "Sort ascending")
+      labels[#labels+1] = '{' .. order .. '|' ..
+        word(options, "gui-selector.index", "Index") .. '|' ..
+        (Labels.SignalLabel(parameters.index_signal, options)
+         or parameters.index_constant or 0) .. '}'
+    elseif operation == "count" then
+      local label = Labels.SignalLabel(parameters.count_signal, options)
+      if label or ineffective(options) then
+        labels[#labels+1] = '{' ..
+          word(options, "gui-selector.count-output", "Count output") .. '|' ..
+          (label or Labels.NONE) .. '}'
+      end
+    elseif operation == "random" then
+      labels[#labels+1] = '{' ..
+        word(options, "gui-selector.random-interval", "Update interval") .. '|' ..
+        (parameters.random_update_interval or 0) .. '}'
     end
     return '<1>\\>|{' .. table.concat(labels, '|') .. '}|<2>\\>'
   elseif control.type == defines.control_behavior.type.constant_combinator then
