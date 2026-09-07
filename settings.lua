@@ -16,10 +16,21 @@ data:extend({
     order = "b",
   },
   {
+    -- record is graphviz's own compact node shape and is what this mod has always
+    -- written. html draws each node as a table instead, which is the only kind of label
+    -- that can hold a picture, so asking for pictures implies it.
+    type = "string-setting",
+    name = "combinatorgraph-label-format",
+    setting_type = "runtime-per-user",
+    default_value = "record",
+    allowed_values = { "record", "html" },
+    order = "c",
+  },
+  {
     type = "bool-setting",
     name = "combinatorgraph-icons",
     setting_type = "runtime-per-user",
     default_value = false,
-    order = "c",
+    order = "d",
   },
 })

@@ -77,7 +77,7 @@ function Graph.Document(ents, options)
     if #wired > 0 then
       local label = Labels.EntityLabel(ent, options)
       local icon = options and options.icons and Graph.IconFor(ent, options.icons)
-      if icon ~= nil or (options and options.icons) then
+      if options and options.html then
         -- an HTML-like label is the only kind that can hold a picture, and the record
         -- shape cannot be one, so the node stops being a record and draws its own table
         gv[#gv+1] = string.format('%d [shape=plaintext label=<%s> pos="%d,%d"];',

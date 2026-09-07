@@ -13,7 +13,10 @@ local function OptionsFor(player_index)
   if player_settings["combinatorgraph-localise"].value then
     options.localiser = Localise.collector()
   end
+  -- a picture can only go in a table, so asking for one asks for html as well
+  options.html = player_settings["combinatorgraph-label-format"].value == "html"
   if player_settings["combinatorgraph-icons"].value then
+    options.html = true
     -- written down in the data stage, because nothing at runtime can say where an icon
     -- file lives: the prototype describes how to draw one, not the file behind it
     local record = prototypes.mod_data["combinatorgraph-icons"]

@@ -8,6 +8,10 @@ local wire = defines.wire_connector_id
 local function two_wired(patch)
     local pump = patch.surface.create_entity{ name = "pump",
         position = { patch.left + 10, patch.top + 10 }, force = "player" }
+    local control = pump.get_or_create_control_behavior()
+    control.circuit_enable_disable = true
+    control.circuit_condition = { first_signal = { type = "fluid", name = "water" },
+                                  comparator = ">", constant = 0 }
     local chest = patch.surface.create_entity{ name = "wooden-chest",
         position = { patch.left + 14, patch.top + 10 }, force = "player" }
     pump.get_wire_connector(wire.circuit_red, true)
@@ -33,11 +37,31 @@ describe("the recorded icons", function()
     end)
 end)
 
+describe("the node style", function()
+    test("is a record unless something asks otherwise", function()
+        local patch = world.arena(120)
+        local document = Graph.Document(two_wired(patch))
+        assert.is_not_nil(document:find("shape=record"), document)
+    end)
+
+    test("is a table when asked for, pictures or not", function()
+        local patch = world.arena(120)
+        local document = Graph.Document(two_wired(patch), { html = true })
+        assert.is_not_nil(document:find("shape=plaintext"), document)
+        assert.is_not_nil(document:find("<TABLE"), document)
+        assert.is_nil(document:find("<IMG"), document)
+        -- the rows the record would have had are the table's rows
+        assert.is_not_nil(document:find("<TD>pump</TD>"), document)
+        assert.is_not_nil(document:find("<TD>water</TD>"), document)
+    end)
+end)
+
 describe("a graph asked for pictures", function()
     test("draws its own table rather than a record, with the image beside the name", function()
         local patch = world.arena(120)
         local paths = icons()
-        local document = Graph.Document(two_wired(patch), { icons = paths })
+        local document = Graph.Document(two_wired(patch),
+                                        { html = true, icons = paths })
 
         assert.is_not_nil(document:find("shape=plaintext"), document)
         assert.is_nil(document:find("shape=record"), document)
@@ -55,7 +79,7 @@ describe("a graph asked for pictures", function()
 
     test("still draws an entity it has no picture for", function()
         local patch = world.arena(120)
-        local document = Graph.Document(two_wired(patch), { icons = {} })
+        local document = Graph.Document(two_wired(patch), { html = true, icons = {} })
         assert.is_not_nil(document:find(">pump</TD>"), document)
         assert.is_nil(document:find("<IMG"), document)
     end)
