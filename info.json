@@ -2,7 +2,7 @@
   "name": "combinatorgraph",
   "author": "Sparr",
   "contact": "sparr0@gmail.com",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "title": "Combinator Graph Generator",
   "homepage": "https://github.com/sparr/factorio-mod-combinatorgraph",
   "description": "Generates a graphviz diagram for the selected combinator circuits. Originally by justarandomgeek.",
