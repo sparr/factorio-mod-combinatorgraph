@@ -188,3 +188,64 @@ describe("an entity nothing here knows about", function()
             labelled("some-modded-thing", { type = 9999 }, "assembling-machine"))
     end)
 end)
+
+--- Issue #2: by default a setting that does nothing is not drawn, which can be exactly
+--- the thing somebody opened the graph to find. `ineffective` asks for them anyway.
+describe("settings with no effect", function()
+    local showing = { ineffective = true }
+
+    it("draws a condition with no signal at all", function()
+        assert.is_nil(Labels.ConditionLabel{ comparator = ">", constant = 5 })
+        assert.equals('{none|\\>|5}',
+            Labels.ConditionLabel({ comparator = ">", constant = 5 }, showing))
+    end)
+
+    it("draws a condition with no right hand side", function()
+        assert.equals('{signal-A|\\>|none}', Labels.ConditionLabel(
+            { first_signal = support.signal("signal-A"), comparator = ">" }, showing))
+    end)
+
+    it("keeps a constant of zero, which is a real operand", function()
+        assert.equals('{signal-A|\\>|0}', Labels.ConditionLabel(
+            { first_signal = support.signal("signal-A"), comparator = ">", constant = 0 }))
+    end)
+
+    it("draws an empty constant combinator slot", function()
+        local control = {
+            type = types.constant_combinator, enabled = true,
+            sections = { { filters = {
+                { value = support.signal("a"), min = 1 },
+                { min = 9 },
+            } } },
+        }
+        assert.equals('{constant-combinator|On|{a|1}}',
+            Labels.EntityLabel(support.entity{ name = "constant-combinator",
+                                               control = control }))
+        assert.equals('{constant-combinator|On|{a|1}|{none|9}}',
+            Labels.EntityLabel(support.entity{ name = "constant-combinator",
+                                               control = control }, showing))
+    end)
+
+    it("draws a decider output with no signal", function()
+        local control = { type = types.decider_combinator, parameters = {
+            outputs = { { signal = {}, copy_count_from_input = false } } } }
+        assert.equals('<1>\\>|{decider-combinator}|<2>\\>',
+            Labels.EntityLabel(support.entity{ name = "decider-combinator",
+                                               control = control }))
+        assert.equals('<1>\\>|{decider-combinator|{none|=|1}}|<2>\\>',
+            Labels.EntityLabel(support.entity{ name = "decider-combinator",
+                                               control = control }, showing))
+    end)
+
+    it("draws an arithmetic combinator that outputs nothing", function()
+        local control = { type = types.arithmetic_combinator, parameters = {
+            first_signal = support.signal("iron-plate"), operation = "*",
+            second_constant = 3 } }
+        assert.equals('<1>\\>|{arithmetic-combinator}|<2>\\>',
+            Labels.EntityLabel(support.entity{ name = "arithmetic-combinator",
+                                               control = control }))
+        assert.equals('<1>\\>|{arithmetic-combinator|{iron-plate|*|3}|none}|<2>\\>',
+            Labels.EntityLabel(support.entity{ name = "arithmetic-combinator",
+                                               control = control }, showing))
+    end)
+end)

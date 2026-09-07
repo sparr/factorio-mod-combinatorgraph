@@ -8,6 +8,17 @@
 --- a lowercase module would be shadowed by it.
 local Labels = {}
 
+--- What an empty slot is drawn as once the player has asked to see the settings that do
+--- nothing. Issue #2: a condition with no signal is always false and an output with no
+--- signal emits nothing, so by default neither is drawn -- which can be exactly the thing
+--- somebody opened the graph to find.
+Labels.NONE = "none"
+
+---@param options table? { ineffective: boolean? }
+local function ineffective(options)
+    return options ~= nil and options.ineffective == true
+end
+
 function Labels.SignalLabel(signal)
   -- TODO: disambiguate signals with the same name but different types
   return signal and signal.name or nil
@@ -16,7 +27,7 @@ end
 -- 2.0 replaced the constant combinator's flat parameter list with logistic sections,
 -- each holding filters whose signal is a value and whose count is a minimum. An empty
 -- combinator has no sections at all, which is what used to be handed to pairs as nil.
-function Labels.CCDataLabels(control)
+function Labels.CCDataLabels(control, options)
   local labels = {}
   for _,section in pairs(control.sections or {}) do
     for _,filter in pairs(section.filters or {}) do
@@ -25,28 +36,37 @@ function Labels.CCDataLabels(control)
           filter.value.name,
           filter.min or 0
         )
+      elseif ineffective(options) then
+        labels[#labels+1] = string.format("{%s|%d}", Labels.NONE, filter.min or 0)
       end
     end
   end
   return labels
 end
 
-function Labels.ConditionLabel(condition)
-  if condition.first_signal and condition.first_signal.name and ((condition.second_signal and condition.second_signal.name) or condition.constant) then
+function Labels.ConditionLabel(condition, options)
+  local first = Labels.SignalLabel(condition.first_signal)
+  -- a constant of zero is a perfectly good operand, so this asks for nil rather than truth
+  local second = condition.second_signal and Labels.SignalLabel(condition.second_signal)
+    or condition.constant
+  if first and second ~= nil then
+    return string.format('{%s|\\%s|%s}', first, condition.comparator, second)
+  end
+  if ineffective(options) then
     return string.format('{%s|\\%s|%s}',
-      Labels.SignalLabel(condition.first_signal),
-      condition.comparator,
-      condition.second_signal and Labels.SignalLabel(condition.second_signal) or condition.constant
+      first or Labels.NONE,
+      condition.comparator or "?",
+      second == nil and Labels.NONE or second
     )
   end
   return nil
 end
 
-function Labels.InserterLabel(control)
+function Labels.InserterLabel(control, options)
   local labels = {}
   -- the single mode_of_operation became two independent switches
   if control.circuit_enable_disable then
-    local label = Labels.ConditionLabel(control.circuit_condition)
+    local label = Labels.ConditionLabel(control.circuit_condition, options)
     if label then
       labels[#labels+1] = label
     end
@@ -70,7 +90,7 @@ function Labels.InserterLabel(control)
   return table.concat(labels, '|')
 end
 
-function Labels.RoboportLabel(control)
+function Labels.RoboportLabel(control, options)
   local labels = {}
   if control.read_logistics then
     labels[#labels+1] = "Read Logistics"
@@ -92,7 +112,7 @@ function Labels.RoboportLabel(control)
   return table.concat(labels, '|')
 end
 
-function Labels.RailSignalLabel(control)
+function Labels.RailSignalLabel(control, options)
   local labels = {}
   if control.read_signal then
     if Labels.SignalLabel(control.red_signal) then
@@ -105,13 +125,13 @@ function Labels.RailSignalLabel(control)
       labels[#labels+1] = '{Green Signal|' .. Labels.SignalLabel(control.green_signal) .. '}'
     end
   end
-  if control.close_signal and Labels.ConditionLabel(control.circuit_condition) then
-    labels[#labels+1] = Labels.ConditionLabel(control.circuit_condition)
+  if control.close_signal and Labels.ConditionLabel(control.circuit_condition, options) then
+    labels[#labels+1] = Labels.ConditionLabel(control.circuit_condition, options)
   end
   return table.concat(labels, '|')
 end
 
-function Labels.RailChainSignalLabel(control)
+function Labels.RailChainSignalLabel(control, options)
   local labels = {}
   if Labels.SignalLabel(control.red_signal) then
     labels[#labels+1] = '{Red Signal|' .. Labels.SignalLabel(control.red_signal) .. '}'
@@ -129,7 +149,7 @@ function Labels.RailChainSignalLabel(control)
 end
 
 -- likewise here: one mode became two switches, and both can be on at once
-function Labels.LogisticContainerLabel(control)
+function Labels.LogisticContainerLabel(control, options)
   local labels = {}
   if control.read_contents then
     labels[#labels+1] = "Read Contents"
@@ -140,7 +160,7 @@ function Labels.LogisticContainerLabel(control)
   return table.concat(labels, '|')
 end
 
-function Labels.EntityLabel(ent)
+function Labels.EntityLabel(ent, options)
   local control = ent.get_or_create_control_behavior()
   --TODO: remote.call for mods to register custom output for modded entities's configs
   if not control then
@@ -155,19 +175,19 @@ function Labels.EntityLabel(ent)
       -- nothing special
   elseif control.type == defines.control_behavior.type.generic_on_off then
     if control.circuit_enable_disable then
-      local label = Labels.ConditionLabel(control.circuit_condition)
+      local label = Labels.ConditionLabel(control.circuit_condition, options)
       if label then
         labels[#labels+1] = label
       end
     end
     if control.connect_to_logistic_network then
-      local label = Labels.ConditionLabel(control.logistic_condition)
+      local label = Labels.ConditionLabel(control.logistic_condition, options)
       if label then
         labels[#labels+1] = label
       end
     end
   elseif control.type == defines.control_behavior.type.inserter then
-    local label = Labels.InserterLabel(control)
+    local label = Labels.InserterLabel(control, options)
     if #label > 0 then
       labels[#labels+1] = label
     end
@@ -175,14 +195,14 @@ function Labels.EntityLabel(ent)
     if control.use_colors then
       labels[#labels+1] = 'Use Colors'
     end
-    local label = Labels.ConditionLabel(control.circuit_condition)
+    local label = Labels.ConditionLabel(control.circuit_condition, options)
     if label then
       labels[#labels+1] = label
     end
   elseif control.type == defines.control_behavior.type.logistic_container then
-    labels[#labels+1] = Labels.LogisticContainerLabel(control)
+    labels[#labels+1] = Labels.LogisticContainerLabel(control, options)
   elseif control.type == defines.control_behavior.type.roboport then
-    labels[#labels+1] = Labels.RoboportLabel(control)
+    labels[#labels+1] = Labels.RoboportLabel(control, options)
   elseif control.type == defines.control_behavior.type.train_stop then
     if control.send_to_train then
       labels[#labels+1] = 'Send to train'
@@ -200,44 +220,47 @@ function Labels.EntityLabel(ent)
       labels[#labels+1] = '{Read trains count|' .. Labels.SignalLabel(control.trains_count_signal) .. '}'
     end
     if control.circuit_enable_disable then
-      local label = Labels.ConditionLabel(control.circuit_condition)
+      local label = Labels.ConditionLabel(control.circuit_condition, options)
       if label then
         labels[#labels+1] = label
       end
     end
   elseif control.type == defines.control_behavior.type.decider_combinator then
     for _,condition in pairs(control.parameters.conditions or {}) do
-      local label = Labels.ConditionLabel(condition)
+      local label = Labels.ConditionLabel(condition, options)
       if label then
         labels[#labels+1] = label
       end
     end
     for _,output in pairs(control.parameters.outputs or {}) do
       local label = Labels.SignalLabel(output.signal)
-      if label then
-        labels[#labels+1] = '{' .. label .. '|=|' .. (output.copy_count_from_input and 'input' or '1') .. '}'
+      if label or ineffective(options) then
+        labels[#labels+1] = '{' .. (label or Labels.NONE) .. '|=|' ..
+          (output.copy_count_from_input and 'input' or '1') .. '}'
       end
     end
     return '<1>\\>|{' .. table.concat(labels, '|') .. '}|<2>\\>'
   elseif control.type == defines.control_behavior.type.arithmetic_combinator then
-    if Labels.SignalLabel(control.parameters.output_signal) then
+    if Labels.SignalLabel(control.parameters.output_signal) or ineffective(options) then
       local op = control.parameters.operation
       if op == ">>" then op = "\\>\\>" end
       if op == "<<" then op = "\\<\\<" end
-      labels[#labels+1] = '{' .. 
-        (Labels.SignalLabel(control.parameters.first_signal) and Labels.SignalLabel(control.parameters.first_signal) or control.parameters.first_constant) .. 
-        '|' .. op .. '|' .. 
-        (Labels.SignalLabel(control.parameters.second_signal) and Labels.SignalLabel(control.parameters.second_signal) or control.parameters.second_constant) ..
+      labels[#labels+1] = '{' ..
+        (Labels.SignalLabel(control.parameters.first_signal) or
+         control.parameters.first_constant or Labels.NONE) ..
+        '|' .. (op or "?") .. '|' ..
+        (Labels.SignalLabel(control.parameters.second_signal) or
+         control.parameters.second_constant or Labels.NONE) ..
         '}'
-      labels[#labels+1] = Labels.SignalLabel(control.parameters.output_signal)
+      labels[#labels+1] = Labels.SignalLabel(control.parameters.output_signal) or Labels.NONE
     end
     return '<1>\\>|{' .. table.concat(labels, '|') .. '}|<2>\\>'
   elseif control.type == defines.control_behavior.type.constant_combinator then
     labels[#labels+1] = control.enabled and "On" or "Off"
-    labels[#labels+1] = table.concat(Labels.CCDataLabels(control),"|")
+    labels[#labels+1] = table.concat(Labels.CCDataLabels(control, options),"|")
   elseif control.type == defines.control_behavior.type.transport_belt then
     if control.circuit_enable_disable then
-      local label = Labels.ConditionLabel(control.circuit_condition)
+      local label = Labels.ConditionLabel(control.circuit_condition, options)
       if label then
         labels[#labels+1] = label
       end
@@ -250,18 +273,18 @@ function Labels.EntityLabel(ent)
       labels[#labels+1] = Labels.SignalLabel(control.output_signal)
     end
   elseif control.type == defines.control_behavior.type.rail_signal then
-    local label = Labels.RailSignalLabel(control)
+    local label = Labels.RailSignalLabel(control, options)
     if #label > 0 then
       labels[#labels+1] = label
     end
   elseif control.type == defines.control_behavior.type.rail_chain_signal then
-    local label = Labels.RailChainSignalLabel(control)
+    local label = Labels.RailChainSignalLabel(control, options)
     if #label > 0 then
       labels[#labels+1] = label
     end
   elseif control.type == defines.control_behavior.type.wall then
     if control.open_gate then
-      local label = Labels.ConditionLabel(control.circuit_condition)
+      local label = Labels.ConditionLabel(control.circuit_condition, options)
       if label then
         labels[#labels+1] = label
       end
@@ -274,7 +297,7 @@ function Labels.EntityLabel(ent)
     end
   elseif control.type == defines.control_behavior.type.mining_drill then
     if control.circuit_enable_disable then
-      local label = Labels.ConditionLabel(control.circuit_condition)
+      local label = Labels.ConditionLabel(control.circuit_condition, options)
       if label then
         labels[#labels+1] = label
       end
@@ -307,8 +330,8 @@ function Labels.EntityLabel(ent)
         instruments[control.circuit_parameters.instrument_id+1] and instruments[control.circuit_parameters.instrument_id+1].name or control.circuit_parameters.instrument_id,
         instruments[control.circuit_parameters.instrument_id+1] and instruments[control.circuit_parameters.instrument_id+1].notes[control.circuit_parameters.note_id+1] or control.circuit_parameters.note_id
       )
-      if Labels.ConditionLabel(control.circuit_condition) then
-        labels[#labels+1] = Labels.ConditionLabel(control.circuit_condition)
+      if Labels.ConditionLabel(control.circuit_condition, options) then
+        labels[#labels+1] = Labels.ConditionLabel(control.circuit_condition, options)
       end
     end
 

@@ -1,9 +1,19 @@
 local Graph = require("lib.graph")
 
+--- What the player who swung the tool wants to see
+---@param player_index uint
+local function OptionsFor(player_index)
+  local player_settings = settings.get_player_settings(player_index)
+  return {
+    ineffective = player_settings["combinatorgraph-show-ineffective"].value,
+  }
+end
+
 local function Write(event)
   if event.item == "combinatorgraph-tool" then
     -- 2.0 moved write_file off game and onto helpers
-    helpers.write_file("combinatorgraph.gv", Graph.Document(event.entities))
+    helpers.write_file("combinatorgraph.gv",
+      Graph.Document(event.entities, OptionsFor(event.player_index)))
   end
 end
 

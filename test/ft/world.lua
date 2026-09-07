@@ -54,17 +54,17 @@ function world.patch()
     end
 
     --- The document the mod would have written for everything placed in this patch
-    function patch.document()
-        return Graph.Document(patch.entities)
+    function patch.document(options)
+        return Graph.Document(patch.entities, options)
     end
 
     --- The document's lines, with the preamble and the closing brace taken off, and every
     --- unit number replaced by the order it first appears. Unit numbers are a global
     --- counter shared with the rest of the run, so an assertion naming real ones would
     --- depend on how many fixtures ran first.
-    function patch.lines()
+    function patch.lines(options)
         local lines = {}
-        for line in patch.document():gmatch("[^\n]+") do lines[#lines + 1] = line end
+        for line in patch.document(options):gmatch("[^\n]+") do lines[#lines + 1] = line end
         table.remove(lines, 1)
         table.remove(lines, 1)
         table.remove(lines)

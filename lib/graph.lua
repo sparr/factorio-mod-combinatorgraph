@@ -43,7 +43,7 @@ function Graph.CircuitConnectors(ent)
   return found
 end
 
-function Graph.Document(ents)
+function Graph.Document(ents, options)
   local gv = {
     "graph combinators {",
     --'graph[overlap="portho" splines="spline" layout="fdp" sep=0.5];',
@@ -55,7 +55,7 @@ function Graph.Document(ents)
     if #wired > 0 then
       gv[#gv+1] = string.format('%d [shape=record label="%s" pos="%d,%d"];',
         ent.unit_number,
-        Labels.EntityLabel(ent),
+        Labels.EntityLabel(ent, options),
         ent.position.x,
         ent.position.y
       )

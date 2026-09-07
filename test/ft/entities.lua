@@ -8,13 +8,13 @@ local wire = defines.wire_connector_id
 --- document at all, and give back its node line.
 ---@param name string
 ---@param configure fun(control: any, entity: LuaEntity)?
-local function label_of(name, configure)
+local function label_of(name, configure, options)
     local patch = world.patch()
     local subject = patch.place(name, 5, 5)
     local chest = patch.place("wooden-chest", 10, 10)
     if configure then configure(subject.get_or_create_control_behavior(), subject) end
     patch.wire(subject, wire.circuit_red, chest, wire.circuit_red)
-    for _, line in ipairs(patch.lines()) do
+    for _, line in ipairs(patch.lines(options)) do
         if line:match("^E1 %[") then
             return line:match('label="(.*)" pos=')
         end
@@ -123,6 +123,30 @@ describe("a storage tank", function()
     -- its behaviour type was renamed single_fluid_box in 2.1
     test("is named and nothing more", function()
         assert.equals('{storage-tank}', label_of("storage-tank"))
+    end)
+end)
+
+--- Issue #2, end to end: the setting exists, the mod reads it, and the document changes.
+describe("the show settings with no effect option", function()
+    local function blank_decider(options)
+        return label_of("decider-combinator", function(control)
+            control.parameters = {
+                conditions = {},
+                outputs = { { signal = nil, copy_count_from_input = false } },
+            }
+        end, options)
+    end
+
+    test("is off by default, and a blank decider says nothing", function()
+        local player_settings = settings.get_player_settings(game.players[1])
+        assert.is_false(player_settings["combinatorgraph-show-ineffective"].value,
+            "the setting should ship switched off")
+        assert.equals('<1>\\>|{decider-combinator}|<2>\\>', blank_decider(nil))
+    end)
+
+    test("draws the blank output once it is on", function()
+        assert.equals('<1>\\>|{decider-combinator|{none|=|1}}|<2>\\>',
+            blank_decider({ ineffective = true }))
     end)
 end)
 
