@@ -5,7 +5,6 @@ Date: ????
     - Selector combinators say what they are set to: the operation, and the sort order and
       index, the count signal or the update interval that goes with it. They had been
       drawn as nothing but their own name
-  Features:
     - Ghosts are drawn as the entity they will become, with their settings, under a row
       saying they are not built yet. They used to be drawn as "entity-ghost" and nothing
       else
@@ -20,6 +19,9 @@ Date: ????
       used to carry a row reading "electric-pole" above the row naming it, and a pump
       used to be drawn as "pump" twice over
   Bugfixes:
+    - Graphs of a real station can be drawn again. The overlap setting the graph asked for
+      takes graphviz down with an assertion failure once a graph gets large, rather than
+      drawing anything at all
     - A programmable speaker's volume reads 0.8 rather than 0.80000001192093
     - An empty constant combinator no longer has a blank row under its on/off row
     - Wires to a selector combinator land on its input and output sides, rather than on

@@ -117,3 +117,14 @@ describe("the document", function()
                       body(Graph.Document({ a, b }))[1])
     end)
 end)
+
+--- portho, the orthogonal overlap remover, takes graphviz's triangulation down with an
+--- assertion failure on a graph the size of a real station, so the document must not ask
+--- for it.
+describe("the document header", function()
+    it("asks for an overlap remover that survives a large graph", function()
+        local document = Graph.Document({})
+        assert.is_nil(document:find("portho"), document)
+        assert.is_not_nil(document:find('overlap="prism"'), document)
+    end)
+end)

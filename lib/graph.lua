@@ -68,8 +68,11 @@ end
 function Graph.Document(ents, options)
   local gv = {
     "graph combinators {",
-    --'graph[overlap="portho" splines="spline" layout="fdp" sep=0.5];',
-    'graph[overlap="portho" splines="spline" sep=0.5];',
+    -- prism rather than portho: portho is the orthogonal overlap remover, and on a graph
+    -- the size of a real station it takes graphviz's triangulation down with an assertion
+    -- failure rather than drawing anything. prism handles the same graphs and is what
+    -- graphviz itself reaches for at that size.
+    'graph[overlap="prism" splines="spline" sep=0.5];',
   }
   local donelist = {}
   for _,ent in pairs(ents) do
