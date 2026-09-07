@@ -76,6 +76,7 @@ if script.active_mods["factorio-test"] and script.active_mods["cg-tests"] then
     "test.ft.entities",
     "test.ft.localise",
     "test.ft.blueprints",
+    "test.ft.showcase",
   }, {
     load_luassert = true,
     game_speed = 100,

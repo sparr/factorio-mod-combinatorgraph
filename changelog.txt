@@ -5,7 +5,13 @@ Date: ????
     - Selector combinators say what they are set to: the operation, and the sort order and
       index, the count signal or the update interval that goes with it. They had been
       drawn as nothing but their own name
+  Changes:
+    - An entity that has nothing to configure is drawn with just its name. A power pole
+      used to carry a row reading "electric-pole" above the row naming it, and a pump
+      used to be drawn as "pump" twice over
   Bugfixes:
+    - A programmable speaker's volume reads 0.8 rather than 0.80000001192093
+    - An empty constant combinator no longer has a blank row under its on/off row
     - Wires to a selector combinator land on its input and output sides, rather than on
       the single side a one sided entity has
 ---------------------------------------------------------------------------------------------------

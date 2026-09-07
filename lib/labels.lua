@@ -210,9 +210,11 @@ end
 function Labels.EntityLabel(ent, options)
   local control = ent.get_or_create_control_behavior()
   --TODO: remote.call for mods to register custom output for modded entities's configs
+  -- A power pole, a wall, anything with nothing to configure. Its name is enough to say
+  -- what it is, and the type used to be printed above it: electric-pole over
+  -- medium-electric-pole, which said nothing the row below it did not.
   if not control then
-    return string.format('{%s|%s}',
-      ent.type,
+    return string.format('{%s}',
       options and options.localiser
         and options.localiser.add(Localise.entity(ent.name)) or ent.name
     )
@@ -334,7 +336,11 @@ function Labels.EntityLabel(ent, options)
   elseif control.type == defines.control_behavior.type.constant_combinator then
     labels[#labels+1] = control.enabled and word(options, CG .. "on", "On")
       or word(options, CG .. "off", "Off")
-    labels[#labels+1] = table.concat(Labels.CCDataLabels(control, options),"|")
+    -- an empty one has nothing to list, and an empty row is just a taller box
+    local data = table.concat(Labels.CCDataLabels(control, options),"|")
+    if #data > 0 then
+      labels[#labels+1] = data
+    end
   elseif control.type == defines.control_behavior.type.transport_belt then
     if control.circuit_enable_disable then
       local label = Labels.ConditionLabel(control.circuit_condition, options)
@@ -389,7 +395,9 @@ function Labels.EntityLabel(ent, options)
         or word(options, GUIS .. "entire-patch", "Entire Patch")
     end
   elseif control.type == defines.control_behavior.type.programmable_speaker then
-    labels[#labels+1] = '{' .. word(options, CG .. "volume", "Volume") .. '|' .. ent.parameters.playback_volume .. '}'
+    -- the volume is a float, and the slider's 0.8 arrives as 0.80000001192093
+    labels[#labels+1] = '{' .. word(options, CG .. "volume", "Volume") .. '|' ..
+      string.format("%g", ent.parameters.playback_volume) .. '}'
     if ent.parameters.playback_globally or ent.parameters.allow_polyphony then
       local labels2 = {}
       if ent.parameters.playback_globally then
@@ -434,7 +442,12 @@ function Labels.EntityLabel(ent, options)
     -- inherit the generic on/off behaviour, so the condition is worth showing even
     -- though there is nothing type specific to say. Asking a behaviour for a property it
     -- does not have is an error rather than a nil, so the question is asked carefully.
-    labels[#labels+1] = ent.type
+    -- The type is worth a row when it says something the name does not: an
+    -- assembling-machine-2 is an assembling-machine. A pump is a pump, and printing that
+    -- twice is just a taller box.
+    if ent.type ~= ent.name then
+      labels[#labels+1] = ent.type
+    end
     local switched, enabled = pcall(function() return control.circuit_enable_disable end)
     if switched and enabled then
       local ok, condition = pcall(function() return control.circuit_condition end)

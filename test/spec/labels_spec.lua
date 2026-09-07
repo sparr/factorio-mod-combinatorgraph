@@ -70,7 +70,7 @@ describe("a constant combinator", function()
 
     -- issue #4: an empty one has no sections at all, which used to reach pairs as nil
     it("survives having no sections at all", function()
-        assert.equals('{constant-combinator|Off|}',
+        assert.equals('{constant-combinator|Off}',
             labelled("constant-combinator",
                      { type = types.constant_combinator, enabled = false }))
     end)
@@ -176,16 +176,25 @@ describe("a plain container or tank", function()
 end)
 
 describe("an entity with no control behaviour at all", function()
-    it("falls back to its type and name", function()
-        assert.equals('{wall|stone-wall}',
+    -- its name says what it is; the type above it said nothing the name did not
+    it("is named, and nothing more", function()
+        assert.equals('{stone-wall}',
             Labels.EntityLabel(support.entity{ name = "stone-wall", type = "wall" }))
+        assert.equals('{medium-electric-pole}',
+            Labels.EntityLabel(support.entity{ name = "medium-electric-pole",
+                                               type = "electric-pole" }))
     end)
 end)
 
 describe("an entity nothing here knows about", function()
-    it("is labelled with its type", function()
+    it("keeps the type when it says something the name does not", function()
         assert.equals('{some-modded-thing|assembling-machine}',
             labelled("some-modded-thing", { type = 9999 }, "assembling-machine"))
+    end)
+
+    -- a pump is a pump, and printing that twice is just a taller box
+    it("drops the type when it only repeats the name", function()
+        assert.equals('{pump}', labelled("pump", { type = 9999 }, "pump"))
     end)
 end)
 
@@ -296,5 +305,25 @@ describe("a selector combinator", function()
     it("gives the interval a random selection is made on", function()
         assert.equals('<1>\\>|{selector-combinator|Random input|{Update interval|60}}|<2>\\>',
             selector{ operation = "random", random_update_interval = 60 })
+    end)
+end)
+
+describe("a programmable speaker", function()
+    it("prints the volume the slider means, not the float behind it", function()
+        local entity = support.entity{
+            name = "programmable-speaker",
+            control = { type = types.programmable_speaker,
+                        circuit_parameters = { signal_value_is_pitch = false,
+                                               instrument_id = 0, note_id = 0 },
+                        circuit_condition = {} },
+        }
+        -- the slider's 0.8 comes back from the game like this
+        entity.parameters = { playback_volume = 0.80000001192093 }
+        entity.prototype = { instruments = {} }
+        entity.alert_parameters = { show_alert = false }
+
+        local label = Labels.EntityLabel(entity)
+        assert.is_nil(label:find("0%.80000001192093"), label)
+        assert.is_not_nil(label:find("{Volume|0%.8}"), label)
     end)
 end)

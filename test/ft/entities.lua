@@ -52,7 +52,7 @@ describe("a constant combinator", function()
     --- Issue #4: an empty one has no sections at all. Before 2.0 this was a flat list of
     --- parameters, and reading it as one is what took the mod down.
     test("survives being empty", function()
-        assert.equals('{constant-combinator|On|}', label_of("constant-combinator"))
+        assert.equals('{constant-combinator|On}', label_of("constant-combinator"))
     end)
 end)
 

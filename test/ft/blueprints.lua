@@ -109,7 +109,7 @@ describe("a published fluid train station", function()
         stamp(patch, FLUID_STATION)
         local found
         for _, line in ipairs(patch.lines()) do
-            found = found or line:match('label="({pump|pump|[^"]*)"')
+            found = found or line:match('label="({pump|[^"]*)"')
         end
         assert.is_not_nil(found, "no pump was drawn with a condition")
         assert.is_not_nil(found:find("signal%-everything"),
@@ -170,7 +170,7 @@ describe("a published LTN style loading station", function()
             ["arithmetic-combinator"] = 5,
             ["decider-combinator"] = 1,
             ["selector-combinator"] = 1,
-            ["electric-pole"] = 6,
+            ["medium-electric-pole"] = 6,
         }, counts)
 
         -- belts, rails, splitters and the sixteen inserters on the far side of the
@@ -241,7 +241,9 @@ describe("a published LTN style loading station", function()
         -- copper half of that must not appear
         local drawn_poles, copper = 0, 0
         for _, line in ipairs(patch.lines()) do
-            if line:match('label="{electric%-pole') then drawn_poles = drawn_poles + 1 end
+            if line:match('label="{medium%-electric%-pole}"') then
+                drawn_poles = drawn_poles + 1
+            end
             if line:match("color=copper") then copper = copper + 1 end
         end
         assert.equals(6, drawn_poles)
