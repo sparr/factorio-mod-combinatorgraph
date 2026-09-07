@@ -1,10 +1,11 @@
 {
   "name": "combinatorgraph",
-  "author": "justarandomgeek",
+  "author": "Sparr",
+  "contact": "sparr0@gmail.com",
   "version": "2.1.1",
   "title": "Combinator Graph Generator",
-  "homepage": "",
-  "description": "Generates a graphviz diagram for the selected combinator circuits.",
+  "homepage": "https://github.com/sparr/factorio-mod-combinatorgraph",
+  "description": "Generates a graphviz diagram for the selected combinator circuits. Originally by justarandomgeek.",
   "factorio_version": "2.1",
   "package": {
     "ignore": [
