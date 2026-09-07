@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.3
-Date: ????
+Date: 2026-09-07
   Features:
     - Selector combinators say what they are set to: the operation, and the sort order and
       index, the count signal or the update interval that goes with it. They had been
