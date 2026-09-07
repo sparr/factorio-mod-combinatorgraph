@@ -389,7 +389,22 @@ function Labels.EntityLabel(ent, options)
       )
     end
   else
+    -- Everything else the game has a control behaviour for, which since 2.0 is most of
+    -- it: pumps, turrets, assemblers, reactors, labs and the rest. They nearly all
+    -- inherit the generic on/off behaviour, so the condition is worth showing even
+    -- though there is nothing type specific to say. Asking a behaviour for a property it
+    -- does not have is an error rather than a nil, so the question is asked carefully.
     labels[#labels+1] = ent.type
+    local switched, enabled = pcall(function() return control.circuit_enable_disable end)
+    if switched and enabled then
+      local ok, condition = pcall(function() return control.circuit_condition end)
+      if ok and condition then
+        local label = Labels.ConditionLabel(condition, options)
+        if label then
+          labels[#labels+1] = label
+        end
+      end
+    end
   end
   return '{' .. table.concat(labels, '|') .. '}'
 end

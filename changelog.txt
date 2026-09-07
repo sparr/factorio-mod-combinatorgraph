@@ -8,6 +8,10 @@ Date: 2026-09-07
     - New per player setting, "Show settings with no effect", off by default. Conditions,
       outputs and filters that have been left blank are drawn as "none" instead of being
       left out of the graph entirely
+  Features:
+    - Anything switched by a circuit condition shows it, not just the handful of entity
+      types that had been given their own handling. Pumps, turrets, assemblers, reactors
+      and the rest used to be drawn with nothing but their type
   Bugfixes:
     - An inserter set to hold its hand contents says so. It has never printed anything for
       hold, because the test for it asked about pulse a second time

@@ -24,21 +24,49 @@ local function prepare()
     prepared = true
 end
 
+--- A patch big enough for a published blueprint, which is far larger than anything the
+--- other fixtures build. Laid out well clear of the ordinary grid rather than inside it,
+--- so that widening one of these can never reach into a neighbour.
+local ARENA = 120
+local ARENA_TOP = 2000
+local arena_index = -1
+
+---@param size integer? defaults to 120 tiles square
+function world.arena(size)
+    prepare()
+    size = size or ARENA
+    arena_index = arena_index + 1
+    local left = arena_index * size
+    local top = ARENA_TOP
+    local surface = world.surface
+    surface.request_to_generate_chunks({ x = left + size / 2, y = top + size / 2 },
+                                       math.ceil(size / 32) + 1)
+    surface.force_generate_chunk_requests()
+    return world.claim(left, top, size)
+end
+
 --- Claim the next patch. `place` puts an entity down and remembers it, so that the
 --- fixture can hand the whole lot to the mod the way a selection would.
 function world.patch()
     prepare()
     patch_index = patch_index + 1
-    local left = (patch_index % COLUMNS) * PATCH
-    local top = math.floor(patch_index / COLUMNS) * PATCH
+    return world.claim((patch_index % COLUMNS) * PATCH,
+                       math.floor(patch_index / COLUMNS) * PATCH, PATCH)
+end
+
+---@param left integer
+---@param top integer
+---@param size integer
+function world.claim(left, top, size)
     local surface = world.surface
 
-    local area = { { left, top }, { left + PATCH, top + PATCH } }
+    local area = { { left, top }, { left + size, top + size } }
     for _, entity in pairs(surface.find_entities(area)) do
         if entity.valid and entity.type ~= "character" then entity.destroy() end
     end
 
-    local patch = { surface = surface, left = left, top = top, area = area, entities = {} }
+    local patch = { surface = surface, left = left, top = top, size = size,
+                    area = area, entities = {} }
 
     --- x and y are relative to the patch, so a fixture never says where it really is
     function patch.place(name, x, y)
