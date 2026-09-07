@@ -1,7 +1,7 @@
 {
   "name": "combinatorgraph",
   "author": "justarandomgeek",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "title": "Combinator Graph Generator",
   "homepage": "",
   "description": "Generates a graphviz diagram for the selected combinator circuits.",
