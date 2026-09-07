@@ -58,7 +58,7 @@ function Labels.InserterLabel(control)
   if control.circuit_read_hand_contents then
     if control.circuit_hand_read_mode == defines.control_behavior.inserter.hand_read_mode.pulse then
       labels[#labels+1] = "Pulse"
-    elseif control.circuit_hand_read_mode == defines.control_behavior.inserter.hand_read_mode.pulse then
+    elseif control.circuit_hand_read_mode == defines.control_behavior.inserter.hand_read_mode.hold then
       labels[#labels+1] = "Hold"
     end
   end

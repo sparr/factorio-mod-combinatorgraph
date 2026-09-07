@@ -1,6 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.2
 Date: ????
+  Bugfixes:
+    - An inserter set to hold its hand contents says so. It has never printed anything for
+      hold, because the test for it asked about pulse a second time
   Changes:
     - Sparr is listed as the author, with justarandomgeek credited as the original author
 ---------------------------------------------------------------------------------------------------

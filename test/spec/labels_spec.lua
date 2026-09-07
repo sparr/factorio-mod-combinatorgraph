@@ -131,6 +131,19 @@ describe("an inserter", function()
             labelled("inserter", control))
     end)
 
+    it("reports a pulsed hand read", function()
+        assert.equals('{inserter|Pulse}', labelled("inserter", {
+            type = types.inserter, circuit_read_hand_contents = true,
+            circuit_hand_read_mode = defines.control_behavior.inserter.hand_read_mode.pulse }))
+    end)
+
+    -- the second branch tested pulse as well, so hold has never printed anything
+    it("reports a held hand read", function()
+        assert.equals('{inserter|Hold}', labelled("inserter", {
+            type = types.inserter, circuit_read_hand_contents = true,
+            circuit_hand_read_mode = defines.control_behavior.inserter.hand_read_mode.hold }))
+    end)
+
     it("reports neither when neither is on", function()
         assert.equals('{inserter}', labelled("inserter", { type = types.inserter }))
     end)
