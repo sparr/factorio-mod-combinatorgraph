@@ -1,0 +1,7 @@
+{
+  "modPath": ".",
+  "mods": ["quality", "recycler", "elevated-rails", "space-age", "cg-tests"],
+  "test": {
+    "game_speed": 100
+  }
+}
