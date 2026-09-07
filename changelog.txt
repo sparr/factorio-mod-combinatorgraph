@@ -2,6 +2,9 @@
 Version: 2.1.2
 Date: ????
   Features:
+    - New per player setting, "Use the game's own names", off by default. Entity names,
+      signal names and settings are printed in your language instead of their internal
+      English names
     - New per player setting, "Show settings with no effect", off by default. Conditions,
       outputs and filters that have been left blank are drawn as "none" instead of being
       left out of the graph entirely

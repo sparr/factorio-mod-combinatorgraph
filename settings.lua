@@ -8,4 +8,11 @@ data:extend({
     default_value = false,
     order = "a",
   },
+  {
+    type = "bool-setting",
+    name = "combinatorgraph-localise",
+    setting_type = "runtime-per-user",
+    default_value = false,
+    order = "b",
+  },
 })
