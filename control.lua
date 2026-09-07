@@ -13,6 +13,12 @@ local function OptionsFor(player_index)
   if player_settings["combinatorgraph-localise"].value then
     options.localiser = Localise.collector()
   end
+  if player_settings["combinatorgraph-icons"].value then
+    -- written down in the data stage, because nothing at runtime can say where an icon
+    -- file lives: the prototype describes how to draw one, not the file behind it
+    local record = prototypes.mod_data["combinatorgraph-icons"]
+    options.icons = record and record.data and record.data.paths or {}
+  end
   return options
 end
 
@@ -76,6 +82,8 @@ if script.active_mods["factorio-test"] and script.active_mods["cg-tests"] then
     "test.ft.entities",
     "test.ft.localise",
     "test.ft.blueprints",
+    "test.ft.ghosts",
+    "test.ft.icons",
     "test.ft.showcase",
   }, {
     load_luassert = true,

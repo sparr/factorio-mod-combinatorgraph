@@ -15,4 +15,11 @@ data:extend({
     default_value = false,
     order = "b",
   },
+  {
+    type = "bool-setting",
+    name = "combinatorgraph-icons",
+    setting_type = "runtime-per-user",
+    default_value = false,
+    order = "c",
+  },
 })

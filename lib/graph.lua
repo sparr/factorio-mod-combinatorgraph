@@ -3,6 +3,7 @@
 --- Writing the file is left to control.lua: this hands back the document as a string, so
 --- that the tests can read what would have been written.
 local Labels = require("lib.labels")
+local Html = require("lib.html")
 
 local Graph = {}
 
@@ -32,12 +33,25 @@ local TWO_SIDED = {
 }
 
 function Graph.WirePort(ent,port)
-  if TWO_SIDED[ent.type] then
+  -- a ghost's own type is entity-ghost; the sides it has are the sides of the thing it
+  -- will become
+  local entity_type = ent.name == "entity-ghost" and ent.ghost_type or ent.type
+  if TWO_SIDED[entity_type] then
     local ports={"w","e"}
     return ports[port]
   else
     return "_"
   end
+end
+
+--- Where the picture of an entity lives, of those the data stage wrote down. A ghost is
+--- drawn with the picture of the thing it will become.
+---@param ent LuaEntity
+---@param icons table<string, string>
+---@return string?
+function Graph.IconFor(ent, icons)
+  local name = ent.name == "entity-ghost" and ent.ghost_name or ent.name
+  return icons[name]
 end
 
 --- The circuit connectors an entity actually has something plugged into
@@ -61,12 +75,26 @@ function Graph.Document(ents, options)
   for _,ent in pairs(ents) do
     local wired = Graph.CircuitConnectors(ent)
     if #wired > 0 then
-      gv[#gv+1] = string.format('%d [shape=record label="%s" pos="%d,%d"];',
-        ent.unit_number,
-        Labels.EntityLabel(ent, options),
-        ent.position.x,
-        ent.position.y
-      )
+      local label = Labels.EntityLabel(ent, options)
+      local icon = options and options.icons and Graph.IconFor(ent, options.icons)
+      if icon ~= nil or (options and options.icons) then
+        -- an HTML-like label is the only kind that can hold a picture, and the record
+        -- shape cannot be one, so the node stops being a record and draws its own table
+        gv[#gv+1] = string.format('%d [shape=plaintext label=<%s> pos="%d,%d"];',
+          ent.unit_number,
+          -- a ghost's first row says it is a ghost; its name is the row under that
+          Html.from_record(label, icon, ent.name == "entity-ghost" and 1 or 0),
+          ent.position.x,
+          ent.position.y
+        )
+      else
+        gv[#gv+1] = string.format('%d [shape=record label="%s" pos="%d,%d"];',
+          ent.unit_number,
+          label,
+          ent.position.x,
+          ent.position.y
+        )
+      end
 
       for _,source in pairs(wired) do
         for _,connection in pairs(source.connector.connections) do

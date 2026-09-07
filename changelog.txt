@@ -5,6 +5,13 @@ Date: ????
     - Selector combinators say what they are set to: the operation, and the sort order and
       index, the count signal or the update interval that goes with it. They had been
       drawn as nothing but their own name
+  Features:
+    - Ghosts are drawn as the entity they will become, with their settings, under a row
+      saying they are not built yet. They used to be drawn as "entity-ghost" and nothing
+      else
+    - New per player setting, "Show entity pictures", off by default. Each entity's icon is
+      drawn beside its name, referred to by a path relative to Factorio's data directory:
+      render with dot -Gimagepath=/path/to/Factorio/data
   Changes:
     - An entity that has nothing to configure is drawn with just its name. A power pole
       used to carry a row reading "electric-pole" above the row naming it, and a pump

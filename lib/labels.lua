@@ -54,6 +54,35 @@ local function word(options, key, english)
     return options.localiser.add({ "?", { key }, english })
 end
 
+--- A ghost stands in for the entity it will become, and carries everything that entity
+--- was set up with: the same control behaviour, readable, and its own wire connectors. So
+--- it is drawn as the thing it is going to be, with a row at the top saying it is not
+--- there yet.
+---@param ent LuaEntity
+---@return string name, string entity_type, boolean is_ghost
+local function identity(ent)
+    if ent.name == "entity-ghost" then
+        return ent.ghost_name, ent.ghost_type, true
+    end
+    return ent.name, ent.type, false
+end
+
+--- A ghost's own prototype is the ghost's, not the one it stands for
+local function prototype_of(ent)
+    if ent.name == "entity-ghost" then return ent.ghost_prototype end
+    return ent.prototype
+end
+
+--- Fields that only a built entity has. A ghost knows what it will be configured as, but
+--- not what it is doing, so asking it is an error rather than a nil.
+---@return any?
+local function built_only(ent, field)
+    if ent.name == "entity-ghost" then return nil end
+    local ok, value = pcall(function() return ent[field] end)
+    if ok then return value end
+    return nil
+end
+
 --- A signal's name, in the player's language when they have asked for it
 ---@param options table?
 ---@param signal SignalID
@@ -208,19 +237,28 @@ function Labels.LogisticContainerLabel(control, options)
 end
 
 function Labels.EntityLabel(ent, options)
+  local name, entity_type, is_ghost = identity(ent)
   local control = ent.get_or_create_control_behavior()
+  local function named()
+    return options and options.localiser
+      and options.localiser.add(Localise.entity(name)) or name
+  end
+  local function ghost_row()
+    return word(options, "entity-status.ghost", "Ghost")
+  end
   --TODO: remote.call for mods to register custom output for modded entities's configs
   -- A power pole, a wall, anything with nothing to configure. Its name is enough to say
   -- what it is, and the type used to be printed above it: electric-pole over
   -- medium-electric-pole, which said nothing the row below it did not.
   if not control then
-    return string.format('{%s}',
-      options and options.localiser
-        and options.localiser.add(Localise.entity(ent.name)) or ent.name
-    )
+    if is_ghost then
+      return string.format('{%s|%s}', ghost_row(), named())
+    end
+    return string.format('{%s}', named())
   end
-  local labels = { options and options.localiser
-    and options.localiser.add(Localise.entity(ent.name)) or ent.name }
+  local labels = {}
+  if is_ghost then labels[#labels+1] = ghost_row() end
+  labels[#labels+1] = named()
   if control.type == defines.control_behavior.type.container or
     control.type == defines.control_behavior.type.single_fluid_box then
       -- nothing special
@@ -396,20 +434,23 @@ function Labels.EntityLabel(ent, options)
     end
   elseif control.type == defines.control_behavior.type.programmable_speaker then
     -- the volume is a float, and the slider's 0.8 arrives as 0.80000001192093
+    local speaker = built_only(ent, "parameters")
+    if speaker then
     labels[#labels+1] = '{' .. word(options, CG .. "volume", "Volume") .. '|' ..
-      string.format("%g", ent.parameters.playback_volume) .. '}'
-    if ent.parameters.playback_globally or ent.parameters.allow_polyphony then
+      string.format("%g", speaker.playback_volume) .. '}'
+    if speaker.playback_globally or speaker.allow_polyphony then
       local labels2 = {}
-      if ent.parameters.playback_globally then
+      if speaker.playback_globally then
         labels2[#labels2+1] = 'Global'
       end
-      if ent.parameters.allow_polyphony then
+      if speaker.allow_polyphony then
         labels2[#labels2+1] = 'Polyphony'
       end
       labels[#labels+1] = '{' .. table.concat(labels2, '|') .. '}'
     end
 
-    local instruments = ent.prototype.instruments
+    end
+    local instruments = prototype_of(ent).instruments
 
     if control.circuit_parameters.signal_value_is_pitch then
       labels[#labels+1] = string.format('{%s|%s}',
@@ -426,14 +467,15 @@ function Labels.EntityLabel(ent, options)
       end
     end
 
-    if ent.alert_parameters and ent.alert_parameters.show_alert then
+    local alert = built_only(ent, "alert_parameters")
+    if alert and alert.show_alert then
       labels[#labels+1] = string.format('{%s|%s|%s}',
-        ent.alert_parameters.show_on_map
+        alert.show_on_map
           and (word(options, CG .. "alert", "Alert") .. "|" ..
                word(options, CG .. "on-map", "On Map"))
           or word(options, CG .. "alert", "Alert"),
-        Labels.SignalLabel(ent.alert_parameters.icon_signal_id, options),
-        ent.alert_parameters.alert_message
+        Labels.SignalLabel(alert.icon_signal_id, options),
+        alert.alert_message
       )
     end
   else
@@ -445,8 +487,8 @@ function Labels.EntityLabel(ent, options)
     -- The type is worth a row when it says something the name does not: an
     -- assembling-machine-2 is an assembling-machine. A pump is a pump, and printing that
     -- twice is just a taller box.
-    if ent.type ~= ent.name then
-      labels[#labels+1] = ent.type
+    if entity_type ~= name then
+      labels[#labels+1] = entity_type
     end
     local switched, enabled = pcall(function() return control.circuit_enable_disable end)
     if switched and enabled then
